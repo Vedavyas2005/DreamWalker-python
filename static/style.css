@@ -1,0 +1,134 @@
+/* Global fonts & colors */
+:root{
+  --accent: #9a6bff;          /* purple accent */
+  --accent2: #4c2a85;
+  --bg-black: #0a0711;
+  --panel: rgba(15, 10, 25, 0.7);
+  --panel-border: rgba(154,107,255,0.35);
+}
+
+/* Real space background */
+.stApp {
+  background-image: url("__SPACE_BG_URL__");
+  background-size: cover;
+  background-attachment: fixed;
+  background-position: center center;
+  color: #e9e6ff;
+}
+
+/* Add a subtle dark veil for legibility */
+.stApp::before{
+  content:"";
+  position: fixed;
+  inset:0;
+  background: radial-gradient(ellipse at center, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.75) 100%);
+  z-index:-1;
+}
+
+/* Floating stars via CSS (tiny sparkles) */
+.stApp::after{
+  content:"";
+  position: fixed;
+  inset:0;
+  pointer-events:none;
+  background-image:
+    radial-gradient(2px 2px at 20% 30%, #ffffffaa, #ffffff00),
+    radial-gradient(1.5px 1.5px at 70% 40%, #ffffffaa, #ffffff00),
+    radial-gradient(1.5px 1.5px at 30% 70%, #ffffffaa, #ffffff00),
+    radial-gradient(2px 2px at 80% 80%, #ffffffaa, #ffffff00),
+    radial-gradient(2px 2px at 40% 85%, #ffffffaa, #ffffff00),
+    radial-gradient(1.5px 1.5px at 60% 15%, #ffffffaa, #ffffff00);
+  z-index:0;
+  animation: twinkle 6s ease-in-out infinite alternate;
+}
+
+@keyframes twinkle {
+  from { opacity: .6; }
+  to   { opacity: .95; }
+}
+
+/* Hero block */
+.hero{
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+}
+.hero .brand{
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 800;
+  letter-spacing: .5px;
+  background: linear-gradient(135deg, #ffffff, var(--accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.hero .tagline{
+  font-size: clamp(18px, 2.6vw, 24px);
+  opacity: .95;
+}
+.hero .subtle{
+  font-size: 13px;
+  opacity: .7;
+  margin-top: .25rem;
+}
+
+/* Panels */
+.panel{
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  padding: 16px 18px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.35);
+  backdrop-filter: blur(3px);
+}
+
+/* Make long prose comfy */
+.prose{
+  line-height: 1.7;
+  font-size: 1.02rem;
+}
+
+/* Buttons */
+.stButton>button{
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: white;
+  border: 0;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 700;
+  box-shadow: 0 8px 20px rgba(154,107,255,.25);
+  transition: transform .06s ease, filter .15s ease;
+}
+.stButton>button:hover{
+  filter: brightness(1.07);
+}
+.stButton>button:active{
+  transform: translateY(1px);
+}
+
+/* Text area */
+textarea{
+  background: rgba(10,7,17,.65) !important;
+  color: #efeaff !important;
+}
+
+/* Footer */
+.footer{
+  margin-top: 2.2rem;
+  text-align: center;
+  opacity: .75;
+  font-size: 12.5px;
+}
+
+/* Astronaut wrapper (fixed overlay, let clicks pass) */
+#astro-wrapper{
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1000; /* over app */
+}
+#astro{
+  position: absolute;
+  width: clamp(70px, 9vw, 120px);
+  opacity: .9;
+  filter: drop-shadow(0 8px 18px rgba(0,0,0,.45));
+}

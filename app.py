@@ -18,7 +18,10 @@ st.set_page_config(
 # ----------------------
 # API Key loading
 # ----------------------
-API_KEY = st.secrets.get("GEMINI_API_KEY") or os.getenv("GEMINI_API_KEY")
+import google.generativeai as genai
+import streamlit as st
+
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 if not API_KEY:
     st.error("🔑 GEMINI_API_KEY not found. Add it to Streamlit secrets or your environment.")
     st.stop()

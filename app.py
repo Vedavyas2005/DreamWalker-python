@@ -1,121 +1,170 @@
 import os
-import math
 from pathlib import Path
 import streamlit as st
 import streamlit.components.v1 as components
 import google.generativeai as genai
 
-# ----------------------
-# Page config
-# ----------------------
+# ----------------------------
+# ✅ PAGE CONFIG
+# ----------------------------
 st.set_page_config(
-    page_title="DreamWalker",
+    page_title="DreamWalker 🌙",
     page_icon="🌙",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# ----------------------
-# API Key loading
-# ----------------------
-import google.generativeai as genai
-import streamlit as st
+# ----------------------------
+# ✅ CONFIGURE GEMINI API
+# ----------------------------
+API_KEY = st.secrets.get("GEMINI_API_KEY") or os.getenv("GEMINI_API_KEY")
+if not API_KEY:
+    st.error("🔑 GEMINI_API_KEY not found. Please add it in Streamlit Secrets or .env file.")
+    st.stop()
 
-genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+genai.configure(api_key=API_KEY)
 
-
-# ----------------------
-# Style & assets
-# ----------------------
-# Space background (real NASA/ESA space photo, public-domain/CC)
+# ----------------------------
+# ✅ GLOBAL VARIABLES
+# ----------------------------
 SPACE_BG_URL = (
-    "https://upload.wikimedia.org/wikipedia/commons/2/2e/ESO_-"
-    "Milky_Way_Arch.jpg"
+    "https://upload.wikimedia.org/wikipedia/commons/2/2e/ESO_-Milky_Way_Arch.jpg"
 )
-
-# Try local astronaut first, else a public-domain fallback
 local_astronaut = Path("assets/astronaut.png")
 if local_astronaut.exists():
     ASTRONAUT_SRC = "assets/astronaut.png"
 else:
-    # Fallback: NASA EVA suit render (public-domain like content)
     ASTRONAUT_SRC = (
         "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Emu_space_suit.png/512px-Emu_space_suit.png"
     )
 
-# Inject CSS
-try:
-    with open("static/styles.css", "r", encoding="utf-8") as f:
-        custom_css = f.read()
-except FileNotFoundError:
-    custom_css = ""
+# ----------------------------
+# ✅ CUSTOM CSS (INLINE)
+# ----------------------------
+st.markdown(
+    f"""
+    <style>
+    .stApp {{
+        background: url('{SPACE_BG_URL}') no-repeat center center fixed;
+        background-size: cover;
+        color: #e9e6ff;
+    }}
+    .stApp::before {{
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: radial-gradient(ellipse at center, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.8) 100%);
+        z-index: -1;
+    }}
+    .hero {{
+        text-align: center;
+        padding-top: 2rem;
+    }}
+    .hero h1 {{
+        font-size: 3rem;
+        background: linear-gradient(135deg, #fff, #9a6bff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }}
+    .hero p {{
+        font-size: 1.2rem;
+        opacity: 0.9;
+    }}
+    textarea {{
+        background: rgba(10,7,17,0.65) !important;
+        color: #efeaff !important;
+    }}
+    .panel {{
+        background: rgba(15,10,25,0.7);
+        border: 1px solid rgba(154,107,255,0.35);
+        border-radius: 14px;
+        padding: 16px 18px;
+        box-shadow: 0 10px 30px rgba(0,0,0,.35);
+        backdrop-filter: blur(3px);
+    }}
+    .footer {{
+        margin-top: 2rem;
+        text-align: center;
+        font-size: 0.8rem;
+        opacity: 0.7;
+    }}
+    #astro-wrapper {{
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 1000;
+    }}
+    #astro {{
+        position: absolute;
+        width: clamp(70px, 9vw, 120px);
+        opacity: .9;
+        filter: drop-shadow(0 8px 18px rgba(0,0,0,.45));
+    }}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
-custom_css = custom_css.replace("__SPACE_BG_URL__", SPACE_BG_URL)
-st.markdown(f"<style>{custom_css}</style>", unsafe_allow_html=True)
-
-# ----------------------
-# Floating astronaut via HTML + JS
-# ----------------------
+# ----------------------------
+# ✅ FLOATING ASTRONAUT JS
+# ----------------------------
 astro_html = """
 <div id="astro-wrapper">
   <img id="astro" src="{ASTRONAUT_SRC}" alt="astronaut" />
 </div>
+
 <script>
   const astro = document.getElementById('astro');
-  const wrapper = document.getElementById('astro-wrapper');
 
   function driftAstronaut() {{
     const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
     const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
 
-    // Keep astronaut inside viewport margins
     const margin = 80;
-    const x = Math.floor(Math.random() * (vw - margin*2)) + margin;
-    const y = Math.floor(Math.random() * (vh - margin*2)) + margin;
+    const x = Math.floor(Math.random() * (vw - margin * 2)) + margin;
+    const y = Math.floor(Math.random() * (vh - margin * 2)) + margin;
 
-    astro.style.transform = `translate(${x}px, ${y}px) rotate(${Math.random()*12-6}deg)`;
+    astro.style.transform = `translate(${x}px, ${y}px) rotate(${Math.random() * 12 - 6}deg)`;
   }}
 
-  // Smooth transition
   astro.style.transition = "transform 7s ease-in-out";
   driftAstronaut();
   setInterval(driftAstronaut, 8000);
-
-  // Resize handler keeps it in bounds
-  window.addEventListener('resize', () => {{
-    driftAstronaut();
-  }});
+  window.addEventListener('resize', driftAstronaut);
 </script>
 """
-components.html(astro_html, height=0)  # injects fixed overlay without taking space
+components.html(astro_html, height=0)
 
-# ----------------------
-# Gemini helpers
-# ----------------------
-def call_gemini(prompt: str, model_name: str = "gemini-1.5-flash") -> str:
-    model = genai.GenerativeModel(model_name)
-    resp = model.generate_content(prompt)
-    return getattr(resp, "text", "").strip()
+# ----------------------------
+# ✅ GEMINI CALL FUNCTION
+# ----------------------------
+def call_gemini(prompt: str) -> str:
+    model = genai.GenerativeModel(model_name="models/gemini-1.5-flash")
+    response = model.generate_content(contents=prompt)
 
+    # Extract text safely
+    try:
+        return response.text
+    except AttributeError:
+        return response.candidates[0].content.parts[0].text
+
+# ----------------------------
+# ✅ PROMPT GENERATORS
+# ----------------------------
 def build_prompt(dream_text: str, tone: str | None) -> str:
     tone_line = f"Preferred storytelling tone: {tone}." if tone else "Use a neutral, cinematic tone."
     return f"""
 You are DreamWalker — an ancient dream interpreter and storyteller.
-Analyze the user's dream from a psychological and symbolic perspective,
-then write a cinematic short story version (2–3 paragraphs), vivid but concise.
+Analyze the following dream psychologically and symbolically,
+then rewrite it as a cinematic short story (2–3 paragraphs) full of emotion and atmosphere.
 
-OUTPUT STRICT FORMAT:
+OUTPUT FORMAT:
 1) Psychological Interpretation:
 - Emotions:
 - Symbols:
 - Meaning:
 2) Cinematic Story:
-[Write 2–3 paragraphs of evocative prose.]
-
-Guidelines:
-- Be respectful and empathetic.
-- Do not invent personal facts about the user.
-- Keep it PG-13.
+[Story paragraphs here]
 
 {tone_line}
 
@@ -123,137 +172,110 @@ Dream:
 \"\"\"{dream_text}\"\"\"
 """.strip()
 
-def build_continue_prompt(previous_story: str, tone: str | None) -> str:
+def build_continue_prompt(story: str, tone: str | None) -> str:
     tone_line = f"Maintain tone: {tone}." if tone else "Maintain the same tone."
     return f"""
-Continue the following dream story seamlessly for 1–2 paragraphs.
-Preserve continuity, imagery, and flow. {tone_line}
+Continue this dream story seamlessly for 1–2 paragraphs. {tone_line}
 
 Story so far:
-\"\"\"{previous_story}\"\"\"
+\"\"\"{story}\"\"\"
 """.strip()
 
-def build_restyle_prompt(previous_story: str, tone: str) -> str:
+def build_restyle_prompt(story: str, tone: str) -> str:
     return f"""
-Rewrite the following story into the specified tone and voice. Keep the plot intact,
-enhance imagery, and ensure cohesion. Tone: {tone}
+Rewrite the following story in a {tone} tone. Keep the plot intact, improve imagery and language.
 
 Story:
-\"\"\"{previous_story}\"\"\"
+\"\"\"{story}\"\"\"
 """.strip()
 
-# ----------------------
-# UI
-# ----------------------
+# ----------------------------
+# ✅ UI - HERO SECTION
+# ----------------------------
 st.markdown(
     """
-<div class="hero">
-  <div class="brand">🌙 DreamWalker</div>
-  <div class="tagline">Turn your dreams into stories.</div>
-  <div class="subtle">Private by design • Real space background • No data stored</div>
-</div>
-""",
-    unsafe_allow_html=True,
+    <div class="hero">
+        <h1>🌙 DreamWalker</h1>
+        <p>Turn your dreams into stories — interpreted by AI and woven into cinematic narratives.</p>
+    </div>
+    """,
+    unsafe_allow_html=True
 )
 
-with st.container():
-    left, right = st.columns([1.2, 1], gap="large")
-    with left:
-        st.write("### Describe your dream")
-        dream = st.text_area(
-            " ",
-            height=220,
-            placeholder="I was running through a silent forest while the stars were falling like snow...",
-            label_visibility="collapsed",
-        )
+# ----------------------------
+# ✅ INPUT FORM
+# ----------------------------
+dream = st.text_area("Describe your dream", height=200, placeholder="I was running through a dark forest under falling stars...")
+tone = st.selectbox("Story tone (optional)", ["", "Mystical", "Dark", "Poetic", "Mythic", "Hopeful", "Melancholic"], index=0)
 
-        st.write("### Story tone (optional)")
-        tone = st.selectbox(
-            "Pick a style",
-            ["", "Mystical", "Dark", "Poetic", "Mythic", "Hopeful", "Melancholic"],
-            index=0,
-            help="Choose how the story should feel.",
-        )
+col1, col2, col3 = st.columns(3)
+generate = col1.button("✨ Interpret & Weave")
+continue_story = col2.button("🪄 Continue the Dream")
+restyle_story = col3.button("🎨 Restyle Story")
 
-        colA, colB, colC = st.columns([1, 1, 1])
-        gen_clicked = colA.button("✨ Interpret & Weave", use_container_width=True)
-        cont_clicked = colB.button("🪄 Continue the Dream", use_container_width=True)
-        restyle_clicked = colC.button("🎨 Restyle Story", use_container_width=True, disabled=False)
-
-    with right:
-        st.write("### Privacy")
-        st.info("We do not store your dreams. Everything is processed in memory and cleared when you refresh.", icon="🔒")
-        st.write("### Tips")
-        st.markdown(
-            "- Be as descriptive as you can.\n"
-            "- Include places, people, colors, feelings.\n"
-            "- One dream at a time gives best results."
-        )
-
-# Session state for results
+# ----------------------------
+# ✅ SESSION STATE INIT
+# ----------------------------
 if "interpretation" not in st.session_state:
     st.session_state.interpretation = ""
 if "story" not in st.session_state:
     st.session_state.story = ""
 
-# Generate
-if gen_clicked:
-    if not dream or not dream.strip():
+# ----------------------------
+# ✅ BUTTON LOGIC
+# ----------------------------
+if generate:
+    if not dream.strip():
         st.warning("Please describe your dream first.")
     else:
-        with st.spinner("Weaving your dream into meaning and story..."):
+        with st.spinner("Weaving your dream... ✨"):
             prompt = build_prompt(dream.strip(), tone if tone else None)
-            full = call_gemini(prompt)
-        # Parse strict sections
-        interp, story = "", ""
-        if "2) Cinematic Story:" in full:
-            parts = full.split("2) Cinematic Story:")
-            interp = parts[0].replace("1) Psychological Interpretation:", "").strip()
-            story = parts[1].strip()
+            full_response = call_gemini(prompt)
+
+        # Parse output
+        if "2) Cinematic Story:" in full_response:
+            parts = full_response.split("2) Cinematic Story:")
+            st.session_state.interpretation = parts[0].replace("1) Psychological Interpretation:", "").strip()
+            st.session_state.story = parts[1].strip()
         else:
-            # Fallback if model didn't follow exact format
-            interp = "Could not parse sections strictly. Here's the full response:\n\n" + full
-            story = ""
-        st.session_state.interpretation = interp
-        st.session_state.story = story
+            st.session_state.interpretation = "Could not parse properly:\n\n" + full_response
+            st.session_state.story = ""
 
-# Continue
-if cont_clicked:
+if continue_story:
     if not st.session_state.story:
-        st.warning("Generate a story first, then continue it.")
+        st.warning("Generate a story first!")
     else:
-        with st.spinner("Extending your dream..."):
+        with st.spinner("Continuing your dream... 🪄"):
             cont_prompt = build_continue_prompt(st.session_state.story, tone if tone else None)
-            more = call_gemini(cont_prompt)
-        st.session_state.story = (st.session_state.story + "\n\n" + more).strip()
+            more_text = call_gemini(cont_prompt)
+        st.session_state.story = (st.session_state.story + "\n\n" + more_text).strip()
 
-# Restyle
-if restyle_clicked:
+if restyle_story:
     if not st.session_state.story:
-        st.warning("Generate a story first, then restyle it.")
+        st.warning("Generate a story first!")
     else:
-        with st.spinner("Restyling your story..."):
+        with st.spinner("Restyling your story 🎨..."):
             restyle_prompt = build_restyle_prompt(st.session_state.story, tone or "Poetic")
             restyled = call_gemini(restyle_prompt)
         st.session_state.story = restyled.strip()
 
-# ----------------------
-# Results
-# ----------------------
+# ----------------------------
+# ✅ RESULTS SECTION
+# ----------------------------
 st.write("---")
-res_left, res_right = st.columns([1, 1], gap="large")
+left, right = st.columns(2)
 
-with res_left:
+with left:
     st.subheader("🧠 Psychological Interpretation")
     if st.session_state.interpretation:
         st.markdown(f"<div class='panel'>{st.session_state.interpretation}</div>", unsafe_allow_html=True)
     else:
-        st.caption("Your interpretation will appear here.")
+        st.caption("Your dream analysis will appear here.")
 
-with res_right:
+with right:
     st.subheader("📖 Cinematic Story")
     if st.session_state.story:
-        st.markdown(f"<div class='panel prose'>{st.session_state.story}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='panel'>{st.session_state.story}</div>", unsafe_allow_html=True)
         st.download_button(
             "📥 Download Story (.txt)",
             data=st.session_state.story.encode("utf-8"),
@@ -264,11 +286,14 @@ with res_right:
     else:
         st.caption("Your story will appear here.")
 
+# ----------------------------
+# ✅ FOOTER
+# ----------------------------
 st.markdown(
     """
-<div class="footer">
-  <span>Built with Streamlit • Powered by Gemini • Space imagery © respective owners (public domain/CC).</span>
-</div>
-""",
-    unsafe_allow_html=True,
+    <div class="footer">
+        Built with ❤️ using Streamlit + Gemini • Your dreams are never stored or shared.
+    </div>
+    """,
+    unsafe_allow_html=True
 )

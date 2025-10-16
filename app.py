@@ -139,15 +139,9 @@ components.html(astro_html, height=0)
 # ✅ GEMINI CALL FUNCTION
 # ----------------------------
 def call_gemini(prompt: str) -> str:
-    try:
-        response = genai.generate_text(
-            model="models/gemini-1.5-flash",
-            prompt=prompt
-        )
-        return response.candidates[0]['output']
-    except Exception as e:
-        st.error(f"❌ Gemini API error: {e}")
-        return "⚠️ Something went wrong. Please check your API key or model name."
+    model = genai.GenerativeModel("models/gemini-1.5-flash")
+    response = model.generate_content(prompt)
+    return response.text
 # ----------------------------
 # ✅ PROMPT GENERATORS
 # ----------------------------

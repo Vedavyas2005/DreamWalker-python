@@ -93,7 +93,7 @@ components.html(astro_html, height=0)  # injects fixed overlay without taking sp
 # ----------------------
 # Gemini helpers
 # ----------------------
-def call_gemini(prompt: str, model_name: str = "gemini-pro") -> str:
+def call_gemini(prompt: str, model_name: str = "gemini-1.5-flash") -> str:
     model = genai.GenerativeModel(model_name)
     resp = model.generate_content(prompt)
     return getattr(resp, "text", "").strip()

@@ -57,7 +57,7 @@ st.markdown(f"<style>{custom_css}</style>", unsafe_allow_html=True)
 # ----------------------
 # Floating astronaut via HTML + JS
 # ----------------------
-astro_html = f"""
+astro_html = """
 <div id="astro-wrapper">
   <img id="astro" src="{ASTRONAUT_SRC}" alt="astronaut" />
 </div>
